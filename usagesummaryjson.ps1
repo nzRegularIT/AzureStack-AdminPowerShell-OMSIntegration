@@ -158,8 +158,8 @@ $today = Get-Date
 $yesterday = $today.addDays(-1)
 $dayBeforeYesterday = $yesterday.addDays(-1)
 
-$usageStartTime = $dayBeforeYesterday.ToShortDateString()
-$usageEndTime = $yesterday.ToShortDateString()
+$usageStartTime = $dayBeforeYesterday.ToString("M/dd/yyyy")
+$usageEndTime = $yesterday.ToString("M/dd/yyyy"
 
 $info = Get-Content -Raw -Path "C:\AZSAdminOMSInt\info.txt" | ConvertFrom-Json
 $Username = $info.AzureStackAdminUsername
