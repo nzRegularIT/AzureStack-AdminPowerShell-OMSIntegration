@@ -1,8 +1,12 @@
 ---
 services: Azure-Stack
 platforms: PowerShell
-author: chasat-ms
+author: nzRegularIT
 ---
+
+# Warning
+
+This fork is being updated to accommodate AzS Posh 1.3.0 breaking changes, and as such this repo is not guaranteed to work in any way, shape or form in its current state.
 
 # AzureStack-AdminPowerShell-OMSIntegration
 
