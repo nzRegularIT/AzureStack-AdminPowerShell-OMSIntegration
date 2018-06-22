@@ -62,11 +62,10 @@ choco install git.install -y
 # refresh the PATH to recognize git
 $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
 
-# download scripts from TFS
-# TODO: pull script from public github without token. 
+# download scripts from GitHub
 cd C:\
-# git clone "https://chasat%40microsoft.com:$($TFSPersonalAccessToken)@mas2oms.visualstudio.com/DefaultCollection/_git/Intellistack"
-git clone "https://github.com/Azure-Samples/AzureStack-AdminPowerShell-OMSIntegration.git" C:\AZSAdminOMSInt
+# git clone "https://github.com/Azure-Samples/AzureStack-AdminPowerShell-OMSIntegration.git" C:\AZSAdminOMSInt
+git clone https://github.com/nzRegularIT/AzureStack-AdminPowerShell-OMSIntegration.git C:\AZSAdminOMSInt
 
 # installing powershell modules for azure stack. 
 # NuGet required for Set-PsRepository PSGallery.  
@@ -75,8 +74,8 @@ Set-PsRepository PSGallery -InstallationPolicy Trusted
 Get-Module -ListAvailable | where-Object {$_.Name -like "Azure*"} | Uninstall-Module
 Install-Module -Name AzureRm.BootStrapper -Force
 Install-Module -Name AzureRm.Resources -Force
-#Use-AzureRmProfile -Profile 2017-03-09-profile -Force
-Install-Module -Name AzureStack -RequiredVersion 1.2.11 -Force
+Use-AzureRmProfile -Profile 2017-03-09-profile -Force
+Install-Module -Name AzureStack -RequiredVersion 1.3.0 -Force
 
 # store data required by scheduled task in files. 
 $info = @{
@@ -107,8 +106,8 @@ Save-Module -Name OMSIngestionAPI -Path "C:\AZSAdminOMSInt\OMSAPI"
 
 #Download Azure Stack Tools VNext
 cd c:\AZSAdminOMSInt
-invoke-webrequest https://github.com/Azure/AzureStack-Tools/archive/vnext.zip -OutFile vnext.zip
-expand-archive vnext.zip -DestinationPath . -Force
+invoke-webrequest https://github.com/Azure/AzureStack-Tools/archive/master.zip -OutFile master.zip
+expand-archive master.zip -DestinationPath . -Force
 
 # schedule windows scheduled task
 cd C:\AZSAdminOMSInt
