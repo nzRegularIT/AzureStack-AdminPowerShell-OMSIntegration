@@ -103,6 +103,8 @@ Set-Content -Path "C:\AZSAdminOMSInt\azpassword.txt" -Value $passwordText
 cd C:\AZSAdminOMSInt
 mkdir OMSAPI
 Save-Module -Name OMSIngestionAPI -Path "C:\AZSAdminOMSInt\OMSAPI"
+# Install Module!
+Install-Module -Name OMSIngestionAPI -Force
 
 #Download Azure Stack Tools VNext
 cd c:\AZSAdminOMSInt
