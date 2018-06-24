@@ -1,10 +1,12 @@
 Start-Transcript -Path C:\AZSAdminOMSInt\OpsDataToOMS.log
-Set-ExecutionPolicy Bypass -Force
-Install-Module -Name OMSIngestionAPI -Force
-Install-Module -Name AzureRM.OperationalInsights -Force
-Import-Module C:\AZSAdminOMSInt\AzureStack-Tools-vnext\Infrastructure\AzureStack.Infra.psm1 -Force
+#Set-ExecutionPolicy Bypass -Force
+#Install-Module -Name OMSIngestionAPI -Force
+#Install-Module -Name AzureRM.OperationalInsights -Force
+#Update-AzureRmProfile -Profile 2017-03-09-profile -RemovePreviousVersions
+#Import-Module C:\AZSAdminOMSInt\AzureStack-Tools-vnext\Infrastructure\AzureStack.Infra.psm1 -Force
+#Import-Module Azs.Infrastructureinsights.Admin
 
-#OMS Authentication
+###### OMS Authentication???
 
 $info = Get-Content -Raw -Path "C:\AZSAdminOMSInt\info.txt" | ConvertFrom-Json
 $Username = $info.AzureUsername
@@ -47,22 +49,26 @@ $AllScaleUnits2=Get-AzSScaleUnitNode -Location $location2
 
 
 ##Get Capacity Data
-$usage2=Get-AzsLocationCapacity -location $location2
-$metrics2=$usage2.UsageMetrics
+
+## TODO Need to update this
+ 
+#$usage2=Get-AzsLocationCapacity -location $location2
+#Get-AzsRegionHealth | select -ExpandProperty usagemetrics
+$metrics2  = Get-AzsRegionHealth -Location $Location2 | select -ExpandProperty usagemetrics
+#$metrics2 = $usage2 #| where {$_.name -eq "physical memory"}
+#$metrics2=$usage2.UsageMetrics
+
 $memory2=$metrics2|where {$_.name -eq "physical memory"}
 $usedmemory2=$memory2.metricsValue|where {$_.name -eq "used"}
 $usedmem2=$usedmemory2.value
-$disk2=$metrics2|where {$_.name -eq "physical storage"}
-$usedisk2=$disk2.metricsValue|where {$_.name -eq "used"}
-$used2=$usedisk2.value
-
-
 $availmemory2=$memory2.metricsValue|where {$_.name -eq "available"}
 $availmem2=$availmemory2.value
 
+$disk2=$metrics2|where {$_.name -eq "physical storage"}
+$usedisk2=$disk2.metricsValue|where {$_.name -eq "used"}
+$used2=$usedisk2.value
 $availabledisk2=$disk2.metricsValue|where {$_.name -eq "available"}
 $availdisk2=$availabledisk2.value
-
 
 $IPPool2=$metrics2|where {$_.name -eq "public ip address pools"}
 $usedIPPool2=$IPPool2.metricsValue|where {$_.name -eq "used"}
@@ -70,13 +76,30 @@ $usedIP2=$usedIPPool2.value
 $availIPPool2=$IPPool2.metricsValue|where {$_.name -eq "available"}
 $availIP2=$availIPPool2.value
 
-
 ##Get ResourceProvider Health
-$RP2=Get-AzsResourceProviderHealths -Location $location2 | where {$_.healthstate -ne "Unknown"}
-
+$RP2=Get-AzsRPHealth -Location $location2 | where {$_.healthstate -ne "Unknown"}
 
 ##Get InfraStructureRole Healths
-$Role2=Get-AzsInfrastructureRoleHealths -Location $location2 | where {$_.healthstate -ne "Unknown"}
+$Role2 = Get-AzsRPHealth | Where {$_.NamespaceProperty -eq 'Microsoft.Fabric.Admin' } | % { Get-AzsRegistrationHealth -ServiceRegistrationId $_.RegistrationId } | where {$_.healthstate -ne "Unknown"} | select ResourceName, HealthState
+#$FRPID=Get-AzsRPHealth|Where-Object {$_.DisplayName -eq "Capacity"}
+#$Role2=Get-AzsRegistrationHealth -ServiceRegistrationId $FRPID.RegistrationId | where {$_.healthstate -ne "Unknown"}
+#$Role2=Get-AzsInfrastructureRoleHealths -Location $location2 | where {$_.healthstate -ne "Unknown"}
+#Get-AzsRPHealth | select DisplayName, NamespaceProperty
+<#
+NamespaceProperty                     
+-----------------                     
+Microsoft.Storage.Admin               
+Microsoft.Update.Admin                
+Microsoft.Compute.Admin               
+Microsoft.KeyVault.Admin              
+Microsoft.InfrastructureInsights.Admin
+Microsoft.Network.Admin               
+Microsoft.Fabric.Admin                
+Microsoft.Backup.Admin 
+#>
+#Get-AzsRPHealth | Where {$_.NamespaceProperty -eq 'Microsoft.Fabric.Admin' } | % { Get-AzsRegistrationHealth -ServiceRegistrationId $_.RegistrationId } | where {$_.healthstate -ne "Unknown"} | select ResourceName, HealthState
+#Get-AzsRPHealth | Where {$_.NamespaceProperty -eq 'Microsoft.Network.Admin'} | % { Get-AzsRegistrationHealth -ServiceRegistrationId $_.RegistrationId } | select ResourceName, HealthState
+
 
 #Login Azure Cloud for OMS 
 Login-AzureRmAccount -Credential $Credential -SubscriptionId $SubscriptionIDforOMS 
@@ -95,10 +118,8 @@ $MASTest = @()
         CloudName = $cloudName2;
         Version = $currentversion2;
         State = $uState2;
-
         DiskUsed = $used2;
         MemoryUsed = $usedmem2;
-
         DiskAvail = $availdisk2;
         MemoryAvail = $availmem2;
         IPPoolUsed = $usedIP2;
@@ -158,14 +179,14 @@ if ($AllScaleUnits2-is [Array]) {
 
 
             $ScaleUnit2= $AllScaleUnits2[$i]
-            $ScaleUnitNodeStatusValue2=$ScaleUnit2.Properties.ScaleUnitNodeStatus
+            $ScaleUnitNodeStatusValue2=$ScaleUnit2.ScaleUnitNodeStatus
            
         $MASSUNode = New-Object psobject -Property @{
             Type = 'ScaleUnitNode';
             CloudName = $cloudName2;
             ScaleUnitNodeName = $AllScaleUnits2[$i].Name;
             ScaleUnitNodeLocation = $AllScaleUnits2[$i].Location;
-            ScaleUnitNodeOperationalStatus = $ScaleUnitNodeStatusValue2;
+            ScaleUnitNodeOperationalStatus = $AllScaleUnits2[$i].ScaleUnitNodeStatus;
             ScaleUnitNodeandCloudName = $AllScaleUnits2[$i].Name +'_'+ $cloudName2;
             TimeStamp = (Get-Date).ToUniversalTime();
            
@@ -176,7 +197,7 @@ if ($AllScaleUnits2-is [Array]) {
    
 }  elseif ($AllScaleUnits2) { 
             $ScaleUnit2= $AllScaleUnits2[0]
-            $ScaleUnitNodeStatusValue2=$ScaleUnit2.Properties.ScaleUnitNodeStatus
+            $ScaleUnitNodeStatusValue2=$ScaleUnit2.ScaleUnitNodeStatus
             
 
     $MASSUNode = New-Object psobject -Property @{
@@ -232,4 +253,4 @@ $logType = 'AzureStack'
 #Upload JSON to OMS
 Send-OMSAPIIngestionFile -customerId $ws.CustomerId -sharedKey $wskey.PrimarySharedKey -body $MASJson -logType $logType -TimeStampField $Timestamp
 
- 
+Stop-Transcript
